@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -42,16 +43,12 @@ func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/employee/")
-	if idStr == "" || idStr == r.URL.Path {
-		http.NotFound(w, r)
-		return
-	}
-	eId, err := strconv.Atoi(idStr)
+	eId, err := getEmployeeId(r.URL.Path)
 	if err != nil {
-		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	memoryStorage := h.storage
 	employee, err := memoryStorage.Get(eId)
 	if err != nil {
@@ -76,16 +73,12 @@ func (h *Handler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/employee/")
-	if idStr == "" || idStr == r.URL.Path {
-		http.NotFound(w, r)
-		return
-	}
-	eId, err := strconv.Atoi(idStr)
+	eId, err := getEmployeeId(r.URL.Path)
 	if err != nil {
-		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	memoryStorage := h.storage
 	isDeleted, err := memoryStorage.Delete(eId)
 	if err != nil {
@@ -97,4 +90,17 @@ func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func getEmployeeId(urlPath string) (int, error) {
+	idStr := strings.TrimPrefix(urlPath, "/employee/")
+	if idStr == "" || idStr == urlPath {
+		return 0, errors.New("endpoint doesnt contain ID")
+	}
+
+	eId, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, errors.New("invalid employee ID")
+	}
+	return eId, nil
 }
