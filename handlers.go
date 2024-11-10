@@ -74,3 +74,27 @@ func (h *Handler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/employee/")
+	if idStr == "" || idStr == r.URL.Path {
+		http.NotFound(w, r)
+		return
+	}
+	eId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		return
+	}
+	memoryStorage := h.storage
+	isDeleted, err := memoryStorage.Delete(eId)
+	if err != nil {
+		http.NotFound(w, r) // 404 Not Found
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(isDeleted); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
