@@ -92,6 +92,40 @@ func (h *Handler) DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
+	eId, err := getEmployeeId(r.URL.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	var e Employee
+	if err := dec.Decode(&e); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	memoryStorage := h.storage
+	isUpdated, err := memoryStorage.Update(eId, e)
+	if !isUpdated {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("You updated employee with ID=%d\n", eId)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated) // 201 Created
+
+	if err := json.NewEncoder(w).Encode(e); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func getEmployeeId(urlPath string) (int, error) {
 	idStr := strings.TrimPrefix(urlPath, "/employee/")
 	if idStr == "" || idStr == urlPath {
