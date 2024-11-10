@@ -17,6 +17,7 @@ type Employee struct {
 type Storage interface {
 	Create(e Employee) Employee
 	Get(id int) (Employee, error)
+	GetAll() []Employee
 	Update(id int, e Employee) (bool, error)
 	Delete(id int) (bool, error)
 }
@@ -49,6 +50,14 @@ func (s *MemoryStorage) Get(id int) (Employee, error) {
 		return Employee{}, errors.New("Employee with such Id doesn't exist")
 	}
 	return e, nil
+}
+
+func (s *MemoryStorage) GetAll() []Employee {
+	employees := []Employee{}
+	for _, employee := range s.data {
+		employees = append(employees, employee)
+	}
+	return employees
 }
 
 func (s *MemoryStorage) Update(id int, e Employee) (bool, error) {

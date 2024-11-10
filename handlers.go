@@ -37,6 +37,7 @@ func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(newEmployee); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -53,7 +54,6 @@ func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 	memoryStorage := h.storage
 	employee, err := memoryStorage.Get(eId)
-	fmt.Println("TUTA2", err)
 	if err != nil {
 		http.NotFound(w, r) // 404 Not Found
 		return
@@ -61,5 +61,16 @@ func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(employee); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Handler) GetEmployees(w http.ResponseWriter, r *http.Request) {
+	employees := h.storage.GetAll()
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(employees); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
