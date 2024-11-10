@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type Handler struct {
@@ -18,7 +20,7 @@ func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	memoryStorage := NewMemoryStorage()
+	memoryStorage := h.storage
 
 	var e Employee
 	if err := dec.Decode(&e); err != nil {
@@ -34,6 +36,30 @@ func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated) // 201 Created
 
 	if err := json.NewEncoder(w).Encode(newEmployee); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/employee/")
+	if idStr == "" || idStr == r.URL.Path {
+		http.NotFound(w, r)
+		return
+	}
+	eId, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid employee ID", http.StatusBadRequest)
+		return
+	}
+	memoryStorage := h.storage
+	employee, err := memoryStorage.Get(eId)
+	fmt.Println("TUTA2", err)
+	if err != nil {
+		http.NotFound(w, r) // 404 Not Found
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(employee); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
