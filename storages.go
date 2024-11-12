@@ -1,8 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"log"
+	"os"
 	"sync"
+
+	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Employee struct {
@@ -80,4 +87,29 @@ func (s *MemoryStorage) Delete(id int) (bool, error) {
 	delete(s.data, id)
 	s.Unlock()
 	return true, nil
+}
+
+type MongoDbStorage struct {
+	coll interface{}
+}
+
+func NewMongoDbStorage(dbName, collection, mongoDBURI string) *MongoDbStorage {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+		return nil
+	}
+
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal("Set your 'MONGODB_URI' environment variable. ")
+		return nil
+	}
+
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil {
+		panic(err)
+	}
+	coll := client.Database("RogaAndKopita").Collection("employees")
+
+	return &MongoDbStorage{coll: coll}
 }
