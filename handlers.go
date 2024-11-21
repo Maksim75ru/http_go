@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"http_go/storages"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
 type Handler struct {
-	storage Storage
+	storage storages.Storage
 }
 
-func NewHandler(storage Storage) *Handler {
+func NewHandler(storage storages.Storage) *Handler {
 	return &Handler{storage: storage}
 }
 
@@ -21,17 +21,17 @@ func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	memoryStorage := h.storage
+	someStorage := h.storage
 
-	var e Employee
+	var e storages.Employee
 	if err := dec.Decode(&e); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	newEmployee := memoryStorage.Create(e)
+	newEmployee := someStorage.Create(e)
 
-	fmt.Printf("You created new employee with ID=%d\n", newEmployee.Id)
+	fmt.Printf("You created new employee with ID=%s\n", newEmployee.Id)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // 201 Created
@@ -49,8 +49,8 @@ func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memoryStorage := h.storage
-	employee, err := memoryStorage.Get(eId)
+	someStorage := h.storage
+	employee, err := someStorage.Get(string(eId))
 	if err != nil {
 		http.NotFound(w, r) // 404 Not Found
 		return
@@ -102,7 +102,7 @@ func (h *Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	var e Employee
+	var e storages.Employee
 	if err := dec.Decode(&e); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -115,7 +115,7 @@ func (h *Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("You updated employee with ID=%d\n", eId)
+	fmt.Printf("You updated employee with ID=%s\n", eId)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // 201 Created
@@ -126,15 +126,12 @@ func (h *Handler) UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getEmployeeId(urlPath string) (int, error) {
-	idStr := strings.TrimPrefix(urlPath, "/employee/")
+func getEmployeeId(urlPath string) (string, error) {
+	idStr := strings.TrimPrefix(urlPath, "/employees/")
+
 	if idStr == "" || idStr == urlPath {
-		return 0, errors.New("endpoint doesnt contain ID")
+		return "", errors.New("endpoint doesnt contain ID")
 	}
 
-	eId, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, errors.New("invalid employee ID")
-	}
-	return eId, nil
+	return idStr, nil
 }
