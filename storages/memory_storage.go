@@ -21,10 +21,10 @@ func NewMemoryStorage() *MemoryStorage {
 
 func (s *MemoryStorage) Create(e Employee) Employee {
 	s.Lock()
+	defer s.Unlock()
 	e.Id = strconv.Itoa(s.counter)
 	s.data[e.Id] = e
 	s.counter++
-	s.Unlock()
 	return s.data[e.Id]
 }
 
